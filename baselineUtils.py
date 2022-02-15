@@ -1,3 +1,5 @@
+from email.header import Header
+from operator import index
 from torch.utils.data import Dataset
 import os
 import pandas as pd
@@ -19,11 +21,7 @@ def create_dataset(
     eval=False,
     verbose=False,
 ):
-    print(dataset_folder)
-    print(dataset_name)
-    print(val_size)
-    print(gt)
-    print(horizon)
+
     if train == True:
         datasets_list = os.listdir(os.path.join(dataset_folder, dataset_name, "train"))
         full_dt_folder = os.path.join(dataset_folder, dataset_name, "train")
@@ -35,6 +33,7 @@ def create_dataset(
         full_dt_folder = os.path.join(dataset_folder, dataset_name, "test")
 
     datasets_list = datasets_list
+    print(datasets_list)
     data = {}
     data_src = []
     data_trg = []
@@ -49,7 +48,7 @@ def create_dataset(
     val_frames = []
     val_dt = []
     val_peds = []
-
+    print("ovdje")
     if verbose:
         print("start loading dataset")
         print("validation set size -> %i" % (val_size))
@@ -57,6 +56,10 @@ def create_dataset(
     for i_dt, dt in enumerate(datasets_list):
         if verbose:
             print("%03i / %03i - loading %s" % (i_dt + 1, len(datasets_list), dt))
+        # if i_dt == 0 or i_dt == 1:
+        # data = pd.read_csv(os.path.join(full_dt_folder, dt), sep="\t", header=None)
+        # print(data.info())
+        # print(data.head())
         raw_data = pd.read_csv(
             os.path.join(full_dt_folder, dt),
             delimiter=delim,
@@ -65,8 +68,9 @@ def create_dataset(
             na_values="?",
         )
 
+        print(raw_data.head())
         raw_data.sort_values(by=["frame", "ped"], inplace=True)
-
+        print(raw_data.head())
         inp, out, info = get_strided_data_clust(raw_data, gt, horizon, 1)
 
         dt_frames = info["frames"]
@@ -296,12 +300,24 @@ def get_strided_data_clust(dt, gt_size, horizon, step):
     raw_data = dtt
 
     ped = raw_data.ped.unique()
+    # print(ped)
     frame = []
     ped_ids = []
+    # print(dt)
+    # print(gt_size)
+    # print(horizon)
+    # print(step)
     for p in ped:
+        # print(f"p is  {p}")
+        # print("u p in ped")
+        # print(raw_data[raw_data.ped == p].shape)
+
+        # print(1 + (raw_data[raw_data.ped == p].shape[0] - gt_size - horizon) // step)
+
         for i in range(
             1 + (raw_data[raw_data.ped == p].shape[0] - gt_size - horizon) // step
         ):
+
             frame.append(
                 dt[dt.ped == p]
                 .iloc[i * step : i * step + gt_size + horizon, [0]]
@@ -314,7 +330,7 @@ def get_strided_data_clust(dt, gt_size, horizon, step):
                 .values
             )
             ped_ids.append(p)
-    print(frame)
+
     frames = np.stack(frame)
     inp_te_np = np.stack(inp_te)
     ped_ids = np.stack(ped_ids)
