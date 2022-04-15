@@ -33,7 +33,7 @@ def create_dataset(
         full_dt_folder = os.path.join(dataset_folder, dataset_name, "test")
 
     datasets_list = datasets_list
-    print(datasets_list)
+
     data = {}
     data_src = []
     data_trg = []
@@ -63,14 +63,65 @@ def create_dataset(
         raw_data = pd.read_csv(
             os.path.join(full_dt_folder, dt),
             delimiter=delim,
-            names=["frame", "ped", "x", "y"],
-            usecols=[0, 1, 2, 3],
+            names=[
+                "frame",
+                "ped",
+                "x",
+                "y",
+                "scale",
+                "head_x",
+                "head_y",
+                "height",
+                "l_ear_x",
+                "l_ear_y",
+                "l_elbow_x",
+                "l_elbow_y",
+                "l_eye_x",
+                "l_eye_y",
+                "l_foot_x",
+                "l_foot_y",
+                "l_hand_x",
+                "l_hand_y",
+                "l_hip_x",
+                "l_hip_y",
+                "l_knee_x",
+                "l_knee_y",
+                "l_shoulder_x",
+                "l_shoulder_y",
+                "neck_x",
+                "neck_y",
+                "r_ear_x",
+                "r_ear_y",
+                "r_elbow_x",
+                "r_elbow_y",
+                "r_eye_x",
+                "r_eye_y",
+                "r_foot_x",
+                "r_foot_y",
+                "r_hand_x",
+                "r_hand_y",
+                "r_hip_x",
+                "r_hip_y",
+                "r_knee_x",
+                "r_knee_y",
+                "r_shoulder_x",
+                "r_shoulder_y",
+                "threshold",
+                "width",
+                "R_1",
+                "R_2",
+                "R_3",
+                "T_1",
+                "T_2",
+                "T_3",
+            ],
+            usecols=list(range(50)),
             na_values="?",
         )
 
-        print(raw_data.head())
+        print(raw_data.columns)
         raw_data.sort_values(by=["frame", "ped"], inplace=True)
-        print(raw_data.head())
+
         inp, out, info = get_strided_data_clust(raw_data, gt, horizon, 1)
 
         dt_frames = info["frames"]
@@ -246,7 +297,7 @@ def get_strided_data_2(dt, gt_size, horizon, step):
             # print("%i,%i,%i" % (i * 4, i * 4 + gt_size, i * 4 + gt_size + horizon))
             inp_te.append(
                 raw_data[raw_data.ped == p]
-                .iloc[i * step : i * step + gt_size + horizon, 2:4]
+                .iloc[i * step : i * step + gt_size + horizon, 2:50]
                 .values
             )
             ped_ids.append(p)
@@ -326,7 +377,7 @@ def get_strided_data_clust(dt, gt_size, horizon, step):
             # print("%i,%i,%i" % (i * 4, i * 4 + gt_size, i * 4 + gt_size + horizon))
             inp_te.append(
                 raw_data[raw_data.ped == p]
-                .iloc[i * step : i * step + gt_size + horizon, 2:4]
+                .iloc[i * step : i * step + gt_size + horizon, 2:50]
                 .values
             )
             ped_ids.append(p)
@@ -369,7 +420,16 @@ def get_strided_data_clust(dt, gt_size, horizon, step):
 
 
 def distance_metrics(gt, preds):
-    errors = np.zeros(preds.shape[:-1])
+    errors = np.zeros(gt.shape[:-1])
+    print("errors shape")
+    print(errors.shape)
+    print("preds shape")
+    print(preds.shape)
+    print("gt shape")
+    print(gt.shape)
+    preds = preds[:, :, :2]
+    print("preds shape")
+    print(preds.shape)
     for i in range(errors.shape[0]):
         for j in range(errors.shape[1]):
             errors[i, j] = scipy.spatial.distance.euclidean(gt[i, j], preds[i, j])

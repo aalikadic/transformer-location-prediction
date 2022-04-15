@@ -42,10 +42,6 @@ class IndividualTF(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-
-
-
-
     def forward(self, *input):
         return self.model.generator(self.model(*input))
 
