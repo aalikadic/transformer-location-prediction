@@ -48,7 +48,7 @@ def create_dataset(
     val_frames = []
     val_dt = []
     val_peds = []
-    print("ovdje")
+
     if verbose:
         print("start loading dataset")
         print("validation set size -> %i" % (val_size))
@@ -71,7 +71,6 @@ def create_dataset(
                 "scale",
                 "head_x",
                 "head_y",
-                "height",
                 "l_ear_x",
                 "l_ear_y",
                 "l_elbow_x",
@@ -106,8 +105,6 @@ def create_dataset(
                 "r_knee_y",
                 "r_shoulder_x",
                 "r_shoulder_y",
-                "threshold",
-                "width",
                 "R_1",
                 "R_2",
                 "R_3",
@@ -115,7 +112,7 @@ def create_dataset(
                 "T_2",
                 "T_3",
             ],
-            usecols=list(range(50)),
+            usecols=list(range(47)),
             na_values="?",
         )
 
