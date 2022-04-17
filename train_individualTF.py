@@ -134,8 +134,8 @@ def main():
     import individual_TF
 
     model = individual_TF.IndividualTF(
-        enc_inp_size=45,
-        dec_inp_size=46,
+        enc_inp_size=48,
+        dec_inp_size=49,
         dec_out_size=2,
         N=args.layers,
         d_model=args.emb_size,
@@ -175,22 +175,21 @@ def main():
     epoch = 0
     # mean=train_dataset[:]['src'][:,1:,2:4].mean((0,1))
     mean = torch.cat(
-        (train_dataset[:]["src"][:, 1:, 2:47], train_dataset[:]["trg"][:, :, 2:47]), 1
+        (train_dataset[:]["src"][:, 1:, 2:50], train_dataset[:]["trg"][:, :, 2:50]), 1
     ).mean((0, 1))
     # std=train_dataset[:]['src'][:,1:,2:4].std((0,1))
     std = torch.cat(
-        (train_dataset[:]["src"][:, 1:, 2:47], train_dataset[:]["trg"][:, :, 2:47]), 1
+        (train_dataset[:]["src"][:, 1:, 2:50], train_dataset[:]["trg"][:, :, 2:50]), 1
     ).std((0, 1))
     means = []
     stds = []
-    stds_2 = []
     for i in np.unique(train_dataset[:]["dataset"]):
         ind = train_dataset[:]["dataset"] == i
         means.append(
             torch.cat(
                 (
-                    train_dataset[:]["src"][ind, 1:, 2:47],
-                    train_dataset[:]["trg"][ind, :, 2:47],
+                    train_dataset[:]["src"][ind, 1:, 2:50],
+                    train_dataset[:]["trg"][ind, :, 2:50],
                 ),
                 1,
             ).mean((0, 1))
@@ -198,17 +197,8 @@ def main():
         stds.append(
             torch.cat(
                 (
-                    train_dataset[:]["src"][ind, 1:, 2:47],
-                    train_dataset[:]["trg"][ind, :, 2:47],
-                ),
-                1,
-            ).std((0, 1))
-        )
-        stds_2.append(
-            torch.cat(
-                (
-                    train_dataset[:]["src"][ind, 1:, 3],
-                    train_dataset[:]["trg"][ind, :, 3],
+                    train_dataset[:]["src"][ind, 1:, 2:50],
+                    train_dataset[:]["trg"][ind, :, 2:50],
                 ),
                 1,
             ).std((0, 1))
@@ -217,27 +207,24 @@ def main():
     mean = torch.stack(means).mean(0)
     std = torch.stack(stds).mean(0)
 
-    mean_list = mean.detach().tolist()
-    std_list = std.detach().tolist()
-
+    ########################### Nadji opet onu nulu
+    print(mean)
+    print(std)
     # print(std2)
-    # print("linija 206 mean i 207 std")
-    # print(mean)
-    # print(std.shape)
-    # std[1] = 17.5
-    # print(std[1])
-    # print(salamander)
-    # print(type(mean))
-    # print(type(std))
-    # mean_2 = torch.nan_to_num(mean, nan=0, posinf=0, neginf=0)
-    # print(mean_2)
-    # print(torch.isnan(mean))
-    # print(torch.isnan(std))
-    # mean_2 = torch.nan_to_num(mean, nan=0.00001, posinf=0.00001, neginf=0.0001)
-    # std_2 = torch.nan_to_num(std, nan=0.00001, posinf=0.00001, neginf=0.0001)
-    # print(std_2)
-    # print(torch.isnan(std_2))
-    # print("--------------")
+    mean_list = mean.detach().tolist()
+    for i, tens in enumerate(mean_list):
+        if tens == 0:
+            mean_list[i] = 0.00000001
+
+    std_list = std.detach().tolist()
+    for i, tens in enumerate(std_list):
+        if tens == 0:
+            std_list[i] = 0.00000001
+    print(mean)
+    print(std)
+
+    mean = torch.FloatTensor(mean_list)
+    std = torch.FloatTensor(std_list)
     scipy.io.savemat(
         f"models/Individual/{args.name}/norm.mat",
         {"mean": mean.cpu().numpy(), "std": std.cpu().numpy()},
@@ -251,7 +238,7 @@ def main():
         for id_b, batch in enumerate(tr_dl):
 
             optim.optimizer.zero_grad()
-            inp = (batch["src"][:, 1:, 2:47].to(device) - mean.to(device)) / std.to(
+            inp = (batch["src"][:, 1:, 2:50].to(device) - mean.to(device)) / std.to(
                 device
             )
 
@@ -259,7 +246,7 @@ def main():
             # print("Linija 229 inp")
             # print(inp.shape)
             # print("-----------")
-            target = (batch["trg"][:, :-1, 2:47].to(device) - mean.to(device)) / std.to(
+            target = (batch["trg"][:, :-1, 2:50].to(device) - mean.to(device)) / std.to(
                 device
             )  #####
             # print("Linija 233 target")
@@ -322,6 +309,9 @@ def main():
                         0,
                         0,
                         0,
+                        0,
+                        0,
+                        0,
                         1,
                     ]
                 )
@@ -330,10 +320,9 @@ def main():
                 .repeat(target.shape[0], 1, 1)
                 .to(device)
             )
-            print("Linija 333 start_of_seq")
-            print(start_of_seq.shape)
-            print(target.shape)
-            print("-----------")
+            # print("Linija 248 start_of_seq")
+            # print(start_of_seq.shape)
+            # print("-----------")
             dec_inp = torch.cat((start_of_seq, target), 1)
 
             dec_inp = torch.nan_to_num(dec_inp, nan=0, posinf=0, neginf=0)
@@ -354,11 +343,11 @@ def main():
             pred = model(inp, dec_inp, src_att, trg_att)
             # print("Linija 327 pred prijje loss")
             # print(pred.shape)
-            # print("prije pred")
-            # print(pred[:, :, 0:2])
-            # print(pred.shape)
+            print("prije pred")
+            print(pred[:, :, 0:2])
+            print(pred.shape)
 
-            # print("poslije pred")
+            print("poslije pred")
             # print("-----------")
             # print("batch trg shape")
             # print(batch["trg"].shape)
@@ -398,282 +387,6 @@ def main():
             epoch_loss += loss.item()
         # sched.step()
         log.add_scalar("Loss/train", epoch_loss / len(tr_dl), epoch)
-        with torch.no_grad():
-            model.eval()
-
-            val_loss = 0
-            step = 0
-            model.eval()
-            gt = []
-            pr = []
-            inp_ = []
-            peds = []
-            frames = []
-            dt = []
-
-            for id_b, batch in enumerate(val_dl):
-                inp_.append(batch["src"])
-                gt.append(batch["trg"][:, :, 0:2])
-                frames.append(batch["frames"])
-                peds.append(batch["peds"])
-                dt.append(batch["dataset"])
-
-                inp = (batch["src"][:, 1:, 2:47].to(device) - mean.to(device)) / std.to(
-                    device
-                )
-
-                inp = torch.nan_to_num(inp, nan=0, posinf=0, neginf=0)
-                src_att = torch.ones((inp.shape[0], 1, inp.shape[1])).to(device)
-                start_of_seq = (
-                    torch.Tensor(
-                        [
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            1,
-                        ]
-                    )
-                    .unsqueeze(0)
-                    .unsqueeze(1)
-                    .repeat(inp.shape[0], 1, 1)
-                    .to(device)
-                )
-                dec_inp = start_of_seq
-                # print("args.preds")
-                # print(args.preds)
-                for i in range(args.preds):
-                    trg_att = (
-                        subsequent_mask(dec_inp.shape[1])
-                        .repeat(dec_inp.shape[0], 1, 1)
-                        .to(device)
-                    )
-                    # print("inp shape")
-                    # print(inp.shape)
-                    # print("dec shape")
-                    # print(dec_inp.shape)
-                    # print("src att shape")
-                    # print(src_att.shape)
-                    # print("trg att shape")
-                    # print(trg_att.shape)
-                    out = model(inp, dec_inp, src_att, trg_att)
-                    print("out shape")
-                    print(out.shape)
-                    # print(out)
-                    print("prvi dec inp shape")
-                    print(dec_inp.shape)
-
-                    # dec_inp = torch.cat((dec_inp, out[:, -1:, :]), 1)
-                    dec_inp = torch.cat((dec_inp, out), 1)
-
-                    dec_inp = torch.nan_to_num(dec_inp, nan=0, posinf=0, neginf=0)
-                    print("dec shape 2")
-                    print(dec_inp.shape)
-
-                preds_tr_b = (
-                    dec_inp[:, 1:, 0:48] * std.to(device) + mean.to(device)
-                ).cpu().numpy().cumsum(1) + batch["src"][:, -1:, 0:48].cpu().numpy()
-                preds_tr_b = np.nan_to_num(preds_tr_b)
-                pr.append(preds_tr_b)
-                print(
-                    "val epoch %03i/%03i  batch %04i / %04i"
-                    % (epoch, args.max_epoch, id_b, len(val_dl))
-                )
-
-            peds = np.concatenate(peds, 0)
-            frames = np.concatenate(frames, 0)
-            dt = np.concatenate(dt, 0)
-            gt = np.concatenate(gt, 0)
-            dt_names = test_dataset.data["dataset_name"]
-            pr = np.concatenate(pr, 0)
-
-            mad, fad, errs = baselineUtils.distance_metrics(gt, pr)
-            log.add_scalar("validation/MAD", mad, epoch)
-            log.add_scalar("validation/FAD", fad, epoch)
-
-            if args.evaluate:
-
-                model.eval()
-                gt = []
-                pr = []
-                inp_ = []
-                peds = []
-                frames = []
-                dt = []
-
-                for id_b, batch in enumerate(test_dl):
-                    inp_.append(batch["src"])
-                    gt.append(batch["trg"][:, :, 0:2])
-                    frames.append(batch["frames"])
-                    peds.append(batch["peds"])
-                    dt.append(batch["dataset"])
-
-                    inp = (
-                        batch["src"][:, 1:, 2:47].to(device) - mean.to(device)
-                    ) / std.to(device)
-                    src_att = torch.ones((inp.shape[0], 1, inp.shape[1])).to(device)
-                    start_of_seq = (
-                        torch.Tensor(
-                            [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                1,
-                            ]
-                        )
-                        .unsqueeze(0)
-                        .unsqueeze(1)
-                        .repeat(inp.shape[0], 1, 1)
-                        .to(device)
-                    )
-                    dec_inp = start_of_seq
-                    # dec_inp = torch.cat((dec_inp, out[:, -1:, :]), 1)
-                    for i in range(args.preds):
-                        trg_att = (
-                            subsequent_mask(dec_inp.shape[1])
-                            .repeat(dec_inp.shape[0], 1, 1)
-                            .to(device)
-                        )
-                        # print("test dl")
-                        # print(inp.shape)
-                        # print(dec_inp.shape)
-                        # print(src_att.shape)
-                        # print(trg_att.shape)
-                        out = model(inp, dec_inp, src_att, trg_att)
-                        dec_inp = torch.cat((dec_inp, out[:, -1:, :]), 1)
-
-                    preds_tr_b = (
-                        dec_inp[:, 1:, 0:2] * std[:2].to(device) + mean[:2].to(device)
-                    ).cpu().numpy().cumsum(1) + batch["src"][:, -1:, 0:2].cpu().numpy()
-                    print("----")
-                    print("preds tr b")
-                    print(preds_tr_b)
-                    preds_tr_b = np.nan_to_num(preds_tr_b)
-                    print(preds_tr_b)
-                    print("----")
-                    pr.append(preds_tr_b)
-                    print(
-                        "test epoch %03i/%03i  batch %04i / %04i"
-                        % (epoch, args.max_epoch, id_b, len(test_dl))
-                    )
-
-                peds = np.concatenate(peds, 0)
-                frames = np.concatenate(frames, 0)
-                dt = np.concatenate(dt, 0)
-                gt = np.concatenate(gt, 0)
-                dt_names = test_dataset.data["dataset_name"]
-                pr = np.concatenate(pr, 0)
-                print(pr)
-                mad, fad, errs = baselineUtils.distance_metrics(gt, pr)
-
-                log.add_scalar("eval/DET_mad", mad, epoch)
-                log.add_scalar("eval/DET_fad", fad, epoch)
-
-                # log.add_scalar('eval/DET_mad', mad, epoch)
-                # log.add_scalar('eval/DET_fad', fad, epoch)
-
-                scipy.io.savemat(
-                    f"output/Individual/{args.name}/det_{epoch}.mat",
-                    {
-                        "input": inp,
-                        "gt": gt,
-                        "pr": pr,
-                        "peds": peds,
-                        "frames": frames,
-                        "dt": dt,
-                        "dt_names": dt_names,
-                    },
-                )
-
-        if epoch % args.save_step == 0:
-
-            torch.save(
-                model.state_dict(), f"models/Individual/{args.name}/{epoch:05d}.pth"
-            )
-
         epoch += 1
     ab = 1
 
