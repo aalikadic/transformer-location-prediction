@@ -207,10 +207,6 @@ def main():
     mean = torch.stack(means).mean(0)
     std = torch.stack(stds).mean(0)
 
-    ########################### Nadji opet onu nulu
-    print(mean)
-    print(std)
-    # print(std2)
     mean_list = mean.detach().tolist()
     for i, tens in enumerate(mean_list):
         if tens == 0:
@@ -220,11 +216,12 @@ def main():
     for i, tens in enumerate(std_list):
         if tens == 0:
             std_list[i] = 0.00000001
-    print(mean)
-    print(std)
 
     mean = torch.FloatTensor(mean_list)
     std = torch.FloatTensor(std_list)
+    np.save("mean.npy", mean)
+    np.save("std.npy", std)
+
     scipy.io.savemat(
         f"models/Individual/{args.name}/norm.mat",
         {"mean": mean.cpu().numpy(), "std": std.cpu().numpy()},
@@ -241,26 +238,15 @@ def main():
             inp = (batch["src"][:, 1:, 2:47].to(device) - mean.to(device)) / std.to(
                 device
             )
-
             inp = torch.nan_to_num(inp, nan=0, posinf=0, neginf=0)
-            # print("Linija 229 inp")
-            # print(inp.shape)
-            # print("-----------")
+
             target = (batch["trg"][:, :-1, 2:47].to(device) - mean.to(device)) / std.to(
                 device
-            )  #####
-            # print("Linija 233 target")
-            # print(target.shape)
-            # print("-----------")
+            )
             target_c = torch.zeros((target.shape[0], target.shape[1], 1)).to(device)
-            # print("Linija 239 target_c")
-            # print(target_c.shape)
-            # print("-----------")
-            #####
+
             target = torch.cat((target, target_c), -1)
-            # print("Linija 244 target")
-            # print(target.shape)
-            # print("-----------")
+
             start_of_seq = (
                 torch.Tensor(
                     [
@@ -317,9 +303,7 @@ def main():
                 .repeat(target.shape[0], 1, 1)
                 .to(device)
             )
-            print("linija 320 i poslije")
-            print(start_of_seq.shape)
-            print(target.shape)
+
             dec_inp = torch.cat((start_of_seq, target), 1)
 
             dec_inp = torch.nan_to_num(dec_inp, nan=0, posinf=0, neginf=0)
@@ -362,7 +346,7 @@ def main():
 
             val_loss = 0
             step = 0
-            model.eval()
+
             gt = []
             pr = []
             inp_ = []
@@ -376,7 +360,7 @@ def main():
                 frames.append(batch["frames"])
                 peds.append(batch["peds"])
                 dt.append(batch["dataset"])
-
+                epoch_val_loss = 0
                 inp = (batch["src"][:, 1:, 2:47].to(device) - mean.to(device)) / std.to(
                     device
                 )
@@ -450,16 +434,31 @@ def main():
                     out = model(inp, dec_inp, src_att, trg_att)
 
                     dec_inp = torch.cat((start_of_seq, out), 1)
+                val_loss = (
+                    F.pairwise_distance(
+                        out[:, :, 0:2].contiguous().view(-1, 2),
+                        (
+                            (batch["trg"][:, :, 2:4].to(device) - mean[:2].to(device))
+                            / std[:2].to(device)
+                        )
+                        .contiguous()
+                        .view(-1, 2)
+                        .to(device),
+                    ).mean()
+                    + torch.mean(torch.abs(pred[:, :, :]))
+                )
 
+                epoch_val_loss += val_loss.item()
                 preds_tr_b = (
                     dec_inp[:, 1:, 0:2] * std[:2].to(device) + mean[:2].to(device)
                 ).cpu().numpy().cumsum(1) + batch["src"][:, -1:, 0:2].cpu().numpy()
                 pr.append(preds_tr_b)
-                print(
-                    "val epoch %03i/%03i  batch %04i / %04i"
-                    % (epoch, args.max_epoch, id_b, len(val_dl))
-                )
 
+                print(
+                    "val epoch %03i/%03i  batch %04i / %04i val loss: %7.4f"
+                    % (epoch, args.max_epoch, id_b, len(val_dl), val_loss.item())
+                )
+            log.add_scalar("Loss/val", epoch_val_loss / len(val_dl), epoch)
             peds = np.concatenate(peds, 0)
             frames = np.concatenate(frames, 0)
             dt = np.concatenate(dt, 0)
@@ -467,8 +466,6 @@ def main():
             dt_names = test_dataset.data["dataset_name"]
             pr = np.concatenate(pr, 0)
             mad, fad, errs = baselineUtils.distance_metrics(gt, pr)
-            log.add_scalar("validation/MAD", mad, epoch)
-            log.add_scalar("validation/FAD", fad, epoch)
 
             if args.evaluate:
 
@@ -573,6 +570,10 @@ def main():
                 gt = np.concatenate(gt, 0)
                 dt_names = test_dataset.data["dataset_name"]
                 pr = np.concatenate(pr, 0)
+                # print(type(gt))
+                # print("gt type gore, dole pr")
+                # print(type(pr))
+
                 mad, fad, errs = baselineUtils.distance_metrics(gt, pr)
 
                 log.add_scalar("eval/DET_mad", mad, epoch)

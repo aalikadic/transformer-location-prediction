@@ -418,15 +418,7 @@ def get_strided_data_clust(dt, gt_size, horizon, step):
 
 def distance_metrics(gt, preds):
     errors = np.zeros(gt.shape[:-1])
-    print("errors shape")
-    print(errors.shape)
-    print("preds shape")
-    print(preds.shape)
-    print("gt shape")
-    print(gt.shape)
-    preds = preds[:, :, :2]
-    print("preds shape")
-    print(preds.shape)
+
     for i in range(errors.shape[0]):
         for j in range(errors.shape[1]):
             errors[i, j] = scipy.spatial.distance.euclidean(gt[i, j], preds[i, j])
