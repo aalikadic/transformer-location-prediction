@@ -219,8 +219,6 @@ def main():
 
     mean = torch.FloatTensor(mean_list)
     std = torch.FloatTensor(std_list)
-    np.save("mean.npy", mean)
-    np.save("std.npy", std)
 
     scipy.io.savemat(
         f"models/Individual/{args.name}/norm.mat",
@@ -449,6 +447,7 @@ def main():
                 )
 
                 epoch_val_loss += val_loss.item()
+
                 preds_tr_b = (
                     dec_inp[:, 1:, 0:2] * std[:2].to(device) + mean[:2].to(device)
                 ).cpu().numpy().cumsum(1) + batch["src"][:, -1:, 0:2].cpu().numpy()
