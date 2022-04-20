@@ -466,6 +466,12 @@ def main():
             pr = np.concatenate(pr, 0)
             mad, fad, errs = baselineUtils.distance_metrics(gt, pr)
 
+            if epoch == 1999:
+                np.save("gt.npy", gt)
+                np.save("pr.npy", pr)
+                np.save("dt.npy", np)
+                np.save("dt_names", dt_names)
+
             if args.evaluate:
 
                 model.eval()
