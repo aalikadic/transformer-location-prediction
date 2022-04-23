@@ -116,7 +116,7 @@ def create_dataset(
             na_values="?",
         )
 
-        print(raw_data.columns)
+        # print(raw_data.columns)
         raw_data.sort_values(by=["frame", "ped"], inplace=True)
 
         inp, out, info = get_strided_data_clust(raw_data, gt, horizon, 1)
@@ -179,7 +179,12 @@ def create_dataset(
         return IndividualTfDataset(data, "train", mean, std), IndividualTfDataset(
             data_val, "validation", mean, std
         )
-
+    # print("----------")
+    # print("src")
+    # print(data["src"][0])
+    # print("-------")
+    # print("trg")
+    # print(data["trg"][0])
     return IndividualTfDataset(data, "train", mean, std), None
 
     return IndividualTfDataset(data, "train", mean, std), IndividualTfDataset(
@@ -346,7 +351,11 @@ def get_strided_data_clust(dt, gt_size, horizon, step):
     inp_te = []
     dtt = dt.astype(np.float32)
     raw_data = dtt
-
+    # print("-----------")
+    # print("In strided data --> raw data")
+    # print(raw_data.shape)
+    # print("raw data 0")
+    # print(raw_data.iloc[0])
     ped = raw_data.ped.unique()
     # print(ped)
     frame = []
