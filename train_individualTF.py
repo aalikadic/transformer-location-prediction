@@ -39,7 +39,7 @@ def main():
     parser.add_argument("--delim", type=str, default="\t")
     parser.add_argument("--name", type=str, default="fpl")
     parser.add_argument("--factor", type=float, default=1.0)
-    parser.add_argument("--save_step", type=int, default=1)
+    parser.add_argument("--save_step", type=int, default=25)
     parser.add_argument("--warmup", type=int, default=10)
     parser.add_argument("--evaluate", type=bool, default=True)
     parser.add_argument("--model_pth", type=str)
@@ -154,8 +154,6 @@ def main():
         train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
 
-    batch = next(iter(tr_dl))
-
     val_dl = torch.utils.data.DataLoader(
         val_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
@@ -172,6 +170,13 @@ def main():
         torch.optim.Adam(model.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9),
     )
     # optim=Adagrad(list(a.parameters())+list(model.parameters())+list(generator.parameters()),lr=0.01,lr_decay=0.001)
+
+    # print("---train_dataset---")
+    # print(type(train_dataset))
+    # print(train_dataset[0]["src"])
+    # print(train_dataset[0]["trg"])
+
+    #### !!!! output iz src i trg je bio isti kao i onaj u notepadu
     epoch = 0
     # mean=train_dataset[:]['src'][:,1:,2:4].mean((0,1))
     mean = torch.cat(
@@ -236,6 +241,7 @@ def main():
             inp = (batch["src"][:, 1:, 2:47].to(device) - mean.to(device)) / std.to(
                 device
             )
+
             inp = torch.nan_to_num(inp, nan=0, posinf=0, neginf=0)
 
             target = (batch["trg"][:, :-1, 2:47].to(device) - mean.to(device)) / std.to(
@@ -304,8 +310,6 @@ def main():
 
             dec_inp = torch.cat((start_of_seq, target), 1)
 
-            dec_inp = torch.nan_to_num(dec_inp, nan=0, posinf=0, neginf=0)
-
             src_att = torch.ones((inp.shape[0], 1, inp.shape[1])).to(device)
             trg_att = (
                 subsequent_mask(dec_inp.shape[1])
@@ -360,6 +364,10 @@ def main():
                 dt.append(batch["dataset"])
                 epoch_val_loss = 0
                 inp = (batch["src"][:, 1:, 2:47].to(device) - mean.to(device)) / std.to(
+                    device
+                )
+
+                trg = (batch["trg"][:, :, 2:47].to(device) - mean.to(device)) / std.to(
                     device
                 )
                 src_att = torch.ones((inp.shape[0], 1, inp.shape[1])).to(device)
@@ -431,7 +439,10 @@ def main():
 
                     out = model(inp, dec_inp, src_att, trg_att)
 
-                    dec_inp = torch.cat((start_of_seq, out), 1)
+                    out_2 = out
+
+                    out_2[:, -1, 2:45] = trg[:, i, 2:]
+                    dec_inp = torch.cat((start_of_seq, out_2), 1)
                 val_loss = (
                     F.pairwise_distance(
                         out[:, :, 0:2].contiguous().view(-1, 2),
@@ -466,6 +477,13 @@ def main():
             pr = np.concatenate(pr, 0)
             mad, fad, errs = baselineUtils.distance_metrics(gt, pr)
 
+            if epoch == 1999:
+                np.save("gt.npy", gt)
+                np.save("pr.npy", pr)
+                np.save("dt_names.npy", dt_names)
+                np.save("dt.npy", dt)
+                print("saved")
+
             if args.evaluate:
 
                 model.eval()
@@ -485,6 +503,9 @@ def main():
 
                     inp = (
                         batch["src"][:, 1:, 2:47].to(device) - mean.to(device)
+                    ) / std.to(device)
+                    trg = (
+                        batch["trg"][:, :, 2:47].to(device) - mean.to(device)
                     ) / std.to(device)
                     src_att = torch.ones((inp.shape[0], 1, inp.shape[1])).to(device)
                     start_of_seq = (
@@ -543,6 +564,7 @@ def main():
                         .repeat(inp.shape[0], 1, 1)
                         .to(device)
                     )
+
                     dec_inp = start_of_seq
 
                     for i in range(args.preds):
@@ -552,7 +574,11 @@ def main():
                             .to(device)
                         )
                         out = model(inp, dec_inp, src_att, trg_att)
-                        dec_inp = torch.cat((dec_inp, out[:, -1:, :]), 1)
+                        out_2 = out
+
+                        out_2[:, -1, 2:45] = trg[:, i, 2:]
+                        dec_inp = torch.cat((start_of_seq, out_2), 1)
+                        # dec_inp = torch.cat((dec_inp, out[:, -1:, :]), 1)
 
                     preds_tr_b = (
                         dec_inp[:, 1:, 0:2] * std[:2].to(device) + mean[:2].to(device)
