@@ -24,10 +24,10 @@ def main():
     parser.add_argument("--dataset_folder", type=str, default="datasets")
     parser.add_argument("--dataset_name", type=str, default="zara1")
     parser.add_argument("--obs", type=int, default=8)
-    parser.add_argument("--preds", type=int, default=12)
-    parser.add_argument("--emb_size", type=int, default=512)
+    parser.add_argument("--preds", type=int, default=1)
+    parser.add_argument("--emb_size", type=int, default=256)
     parser.add_argument("--heads", type=int, default=8)
-    parser.add_argument("--layers", type=int, default=6)
+    parser.add_argument("--layers", type=int, default=12)
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--cpu", action="store_true")
     parser.add_argument("--val_size", type=int, default=0)
@@ -167,7 +167,7 @@ def main():
         args.emb_size,
         args.factor,
         len(tr_dl) * args.warmup,
-        torch.optim.Adam(model.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9),
+        torch.optim.Adam(model.parameters(), lr=0.000001, betas=(0.9, 0.98), eps=1e-9),
     )
     # optim=Adagrad(list(a.parameters())+list(model.parameters())+list(generator.parameters()),lr=0.01,lr_decay=0.001)
 
@@ -461,7 +461,7 @@ def main():
 
                 preds_tr_b = (
                     dec_inp[:, 1:, 0:2] * std[:2].to(device) + mean[:2].to(device)
-                ).cpu().numpy().cumsum(1) + batch["src"][:, -1:, 0:2].cpu().numpy()
+                ).cpu().numpy().cumsum(1) #+ batch["src"][:, -1:, 0:2].cpu().numpy()
                 pr.append(preds_tr_b)
 
                 print(
@@ -582,7 +582,7 @@ def main():
 
                     preds_tr_b = (
                         dec_inp[:, 1:, 0:2] * std[:2].to(device) + mean[:2].to(device)
-                    ).cpu().numpy().cumsum(1) + batch["src"][:, -1:, 0:2].cpu().numpy()
+                    ).cpu().numpy().cumsum(1) #+ batch["src"][:, -1:, 0:2].cpu().numpy()
                     pr.append(preds_tr_b)
                     print(
                         "test epoch %03i/%03i  batch %04i / %04i"
