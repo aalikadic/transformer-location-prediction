@@ -432,3 +432,62 @@ def distance_metrics(gt, preds):
         for j in range(errors.shape[1]):
             errors[i, j] = scipy.spatial.distance.euclidean(gt[i, j], preds[i, j])
     return errors.mean(), errors[:, -1].mean(), errors
+
+
+def calculate_mean_std(dataset, number_of_features):
+    mean = torch.cat(
+        (
+            dataset[:]["src"][:, 1:, 2 : (2 + number_of_features)],
+            dataset[:]["trg"][:, :, 2 : (2 + number_of_features)],
+        ),
+        1,
+    ).mean((0, 1))
+    # std=train_dataset[:]['src'][:,1:,2:4].std((0,1))
+    std = torch.cat(
+        (
+            dataset[:]["src"][:, 1:, 2 : (2 + number_of_features)],
+            dataset[:]["trg"][:, :, 2 : (2 + number_of_features)],
+        ),
+        1,
+    ).std((0, 1))
+    means = []
+    stds = []
+
+    for i in np.unique(dataset[:]["dataset"]):
+        ind = dataset[:]["dataset"] == i
+        means.append(
+            torch.cat(
+                (
+                    dataset[:]["src"][ind, 1:, 2 : (2 + number_of_features)],
+                    dataset[:]["trg"][ind, :, 2 : (2 + number_of_features)],
+                ),
+                1,
+            ).mean((0, 1))
+        )
+        stds.append(
+            torch.cat(
+                (
+                    dataset[:]["src"][ind, 1:, 2 : (2 + number_of_features)],
+                    dataset[:]["trg"][ind, :, 2 : (2 + number_of_features)],
+                ),
+                1,
+            ).std((0, 1))
+        )
+
+    mean = torch.stack(means).mean(0)
+    std = torch.stack(stds).mean(0)
+
+    mean_list = mean.detach().tolist()
+    for i, tens in enumerate(mean_list):
+        if tens == 0:
+            mean_list[i] = 0.00000001
+
+    std_list = std.detach().tolist()
+    for i, tens in enumerate(std_list):
+        if tens == 0:
+            std_list[i] = 0.00000001
+
+    mean = torch.FloatTensor(mean_list)
+    std = torch.FloatTensor(std_list)
+
+    return mean, std
