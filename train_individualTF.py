@@ -134,9 +134,9 @@ def main():
     import individual_TF
 
     model = individual_TF.IndividualTF(
-        enc_inp_size=45,
-        dec_inp_size=46,
-        dec_out_size=46,
+        enc_inp_size=3,
+        dec_inp_size=4,
+        dec_out_size=4,
         N=args.layers,
         d_model=args.emb_size,
         d_ff=2048,
@@ -175,11 +175,11 @@ def main():
     epoch = 0
     # mean=train_dataset[:]['src'][:,1:,2:4].mean((0,1))
     mean = torch.cat(
-        (train_dataset[:]["src"][:, 1:, 2:47], train_dataset[:]["trg"][:, :, 2:47]), 1
+        (train_dataset[:]["src"][:, 1:, 2:5], train_dataset[:]["trg"][:, :, 2:5]), 1
     ).mean((0, 1))
     # std=train_dataset[:]['src'][:,1:,2:4].std((0,1))
     std = torch.cat(
-        (train_dataset[:]["src"][:, 1:, 2:47], train_dataset[:]["trg"][:, :, 2:47]), 1
+        (train_dataset[:]["src"][:, 1:, 2:5], train_dataset[:]["trg"][:, :, 2:5]), 1
     ).std((0, 1))
     means = []
     stds = []
@@ -188,8 +188,8 @@ def main():
         means.append(
             torch.cat(
                 (
-                    train_dataset[:]["src"][ind, 1:, 2:47],
-                    train_dataset[:]["trg"][ind, :, 2:47],
+                    train_dataset[:]["src"][ind, 1:, 2:5],
+                    train_dataset[:]["trg"][ind, :, 2:5],
                 ),
                 1,
             ).mean((0, 1))
@@ -197,8 +197,8 @@ def main():
         stds.append(
             torch.cat(
                 (
-                    train_dataset[:]["src"][ind, 1:, 2:47],
-                    train_dataset[:]["trg"][ind, :, 2:47],
+                    train_dataset[:]["src"][ind, 1:, 2:5],
+                    train_dataset[:]["trg"][ind, :, 2:5],
                 ),
                 1,
             ).std((0, 1))
@@ -233,12 +233,12 @@ def main():
         for id_b, batch in enumerate(tr_dl):
 
             optim.optimizer.zero_grad()
-            inp = (batch["src"][:, 1:, 2:47].to(device) - mean.to(device)) / std.to(
+            inp = (batch["src"][:, 1:, 2:5].to(device) - mean.to(device)) / std.to(
                 device
             )
             inp = torch.nan_to_num(inp, nan=0, posinf=0, neginf=0)
 
-            target = (batch["trg"][:, :-1, 2:47].to(device) - mean.to(device)) / std.to(
+            target = (batch["trg"][:, :-1, 2:5].to(device) - mean.to(device)) / std.to(
                 device
             )
             target_c = torch.zeros((target.shape[0], target.shape[1], 1)).to(device)
@@ -248,48 +248,6 @@ def main():
             start_of_seq = (
                 torch.Tensor(
                     [
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
                         0,
                         0,
                         0,
@@ -312,15 +270,19 @@ def main():
                 .repeat(dec_inp.shape[0], 1, 1)
                 .to(device)
             )
-
+            print("-----")
+            print(inp.shape)
+            print(dec_inp.shape)
+            print(src_att.shape)
+            print(trg_att.shape)
             pred = model(inp, dec_inp, src_att, trg_att)
 
             loss = (
                 F.pairwise_distance(
-                    pred[:, :, 0:2].contiguous().view(-1, 2),
+                    pred[:, :, 0:3].contiguous().view(-1, 2),
                     (
-                        (batch["trg"][:, :, 2:4].to(device) - mean[:2].to(device))
-                        / std[:2].to(device)
+                        (batch["trg"][:, :, 2:5].to(device) - mean.to(device))
+                        / std.to(device)
                     )
                     .contiguous()
                     .view(-1, 2)
@@ -359,55 +321,13 @@ def main():
                 peds.append(batch["peds"])
                 dt.append(batch["dataset"])
                 epoch_val_loss = 0
-                inp = (batch["src"][:, 1:, 2:47].to(device) - mean.to(device)) / std.to(
+                inp = (batch["src"][:, 1:, 2:5].to(device) - mean.to(device)) / std.to(
                     device
                 )
                 src_att = torch.ones((inp.shape[0], 1, inp.shape[1])).to(device)
                 start_of_seq = (
                     torch.Tensor(
                         [
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
                             0,
                             0,
                             0,
@@ -434,10 +354,10 @@ def main():
                     dec_inp = torch.cat((start_of_seq, out), 1)
                 val_loss = (
                     F.pairwise_distance(
-                        out[:, :, 0:2].contiguous().view(-1, 2),
+                        out[:, :, 0:3].contiguous().view(-1, 2),
                         (
-                            (batch["trg"][:, :, 2:4].to(device) - mean[:2].to(device))
-                            / std[:2].to(device)
+                            (batch["trg"][:, :, 2:5].to(device) - mean.to(device))
+                            / std.to(device)
                         )
                         .contiguous()
                         .view(-1, 2)
@@ -490,54 +410,12 @@ def main():
                     dt.append(batch["dataset"])
 
                     inp = (
-                        batch["src"][:, 1:, 2:47].to(device) - mean.to(device)
+                        batch["src"][:, 1:, 2:5].to(device) - mean.to(device)
                     ) / std.to(device)
                     src_att = torch.ones((inp.shape[0], 1, inp.shape[1])).to(device)
                     start_of_seq = (
                         torch.Tensor(
                             [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
                                 0,
                                 0,
                                 0,

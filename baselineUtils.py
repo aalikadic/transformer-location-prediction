@@ -69,50 +69,8 @@ def create_dataset(
                 "x",
                 "y",
                 "scale",
-                "head_x",
-                "head_y",
-                "l_ear_x",
-                "l_ear_y",
-                "l_elbow_x",
-                "l_elbow_y",
-                "l_eye_x",
-                "l_eye_y",
-                "l_foot_x",
-                "l_foot_y",
-                "l_hand_x",
-                "l_hand_y",
-                "l_hip_x",
-                "l_hip_y",
-                "l_knee_x",
-                "l_knee_y",
-                "l_shoulder_x",
-                "l_shoulder_y",
-                "neck_x",
-                "neck_y",
-                "r_ear_x",
-                "r_ear_y",
-                "r_elbow_x",
-                "r_elbow_y",
-                "r_eye_x",
-                "r_eye_y",
-                "r_foot_x",
-                "r_foot_y",
-                "r_hand_x",
-                "r_hand_y",
-                "r_hip_x",
-                "r_hip_y",
-                "r_knee_x",
-                "r_knee_y",
-                "r_shoulder_x",
-                "r_shoulder_y",
-                "R_1",
-                "R_2",
-                "R_3",
-                "T_1",
-                "T_2",
-                "T_3",
             ],
-            usecols=list(range(47)),
+            usecols=list(range(5)),
             na_values="?",
         )
 
@@ -374,7 +332,7 @@ def get_strided_data_clust(dt, gt_size, horizon, step):
             # print("%i,%i,%i" % (i * 4, i * 4 + gt_size, i * 4 + gt_size + horizon))
             inp_te.append(
                 raw_data[raw_data.ped == p]
-                .iloc[i * step : i * step + gt_size + horizon, 2:50]
+                .iloc[i * step : i * step + gt_size + horizon, 2:5]
                 .values
             )
             ped_ids.append(p)
