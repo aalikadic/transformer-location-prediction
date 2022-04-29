@@ -29,7 +29,7 @@ To train just run the *train_individual.py* with different parameters
 
 example: to train on the data for eth
 ```
-CUDA_VISIBLE_DEVICES=0  python train_individualTF.py --dataset_name fpl --name fpl --max_epoch 1 --batch_size 100 --name fpl_train --factor 1
+CUDA_VISIBLE_DEVICES=0 python train_individualTF.py --dataset_name eth --name eth --max_epoch 240 --batch_size 100 --name eth_train --factor 1
 ```
 
 ### QuantizedTF
