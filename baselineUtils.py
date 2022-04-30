@@ -74,7 +74,7 @@ def create_dataset(
             na_values="?",
         )
 
-        print(raw_data.columns)
+        
         raw_data.sort_values(by=["frame", "ped"], inplace=True)
 
         inp, out, info = get_strided_data_clust(raw_data, gt, horizon, 1)

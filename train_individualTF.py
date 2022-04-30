@@ -23,8 +23,8 @@ def main():
     )
     parser.add_argument("--dataset_folder", type=str, default="datasets")
     parser.add_argument("--dataset_name", type=str, default="zara1")
-    parser.add_argument("--obs", type=int, default=8)
-    parser.add_argument("--preds", type=int, default=12)
+    parser.add_argument("--obs", type=int, default=10)
+    parser.add_argument("--preds", type=int, default=1)
     parser.add_argument("--emb_size", type=int, default=512)
     parser.add_argument("--heads", type=int, default=8)
     parser.add_argument("--layers", type=int, default=6)
@@ -270,25 +270,20 @@ def main():
                 .repeat(dec_inp.shape[0], 1, 1)
                 .to(device)
             )
-            print("-----")
-            print(inp.shape)
-            print(dec_inp.shape)
-            print(src_att.shape)
-            print(trg_att.shape)
             pred = model(inp, dec_inp, src_att, trg_att)
 
             loss = (
                 F.pairwise_distance(
-                    pred[:, :, 0:3].contiguous().view(-1, 2),
+                    pred[:, :, 0:2].contiguous().view(-1, 2),
                     (
-                        (batch["trg"][:, :, 2:5].to(device) - mean.to(device))
-                        / std.to(device)
+                        (batch["trg"][:, :, 2:4].to(device) - mean[:2].to(device))
+                        / std[:2].to(device)
                     )
                     .contiguous()
                     .view(-1, 2)
                     .to(device),
                 ).mean()
-                + torch.mean(torch.abs(pred[:, :, :]))
+                + torch.mean(torch.abs(pred[:, :, :2]))
             )
 
             loss.backward()
@@ -354,10 +349,10 @@ def main():
                     dec_inp = torch.cat((start_of_seq, out), 1)
                 val_loss = (
                     F.pairwise_distance(
-                        out[:, :, 0:3].contiguous().view(-1, 2),
+                        out[:, :, 0:2].contiguous().view(-1, 2),
                         (
-                            (batch["trg"][:, :, 2:5].to(device) - mean.to(device))
-                            / std.to(device)
+                            (batch["trg"][:, :, 2:4].to(device) - mean[:2].to(device))
+                            / std[:2].to(device)
                         )
                         .contiguous()
                         .view(-1, 2)
