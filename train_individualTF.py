@@ -24,7 +24,7 @@ def main():
     parser.add_argument("--dataset_folder", type=str, default="datasets")
     parser.add_argument("--dataset_name", type=str, default="zara1")
     parser.add_argument("--obs", type=int, default=10)
-    parser.add_argument("--preds", type=int, default=6)
+    parser.add_argument("--preds", type=int, default=10)
     parser.add_argument("--emb_size", type=int, default=512)
     parser.add_argument("--heads", type=int, default=8)
     parser.add_argument("--layers", type=int, default=6)
