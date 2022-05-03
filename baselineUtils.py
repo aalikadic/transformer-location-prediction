@@ -69,8 +69,14 @@ def create_dataset(
                 "x",
                 "y",
                 "scale",
+                "R_1",
+                "R_2",
+                "R_3",
+                "T_1",
+                "T_2",
+                "T_3",
             ],
-            usecols=list(range(5)),
+            usecols=list(range(11)),
             na_values="?",
         )
 
@@ -332,7 +338,7 @@ def get_strided_data_clust(dt, gt_size, horizon, step):
             # print("%i,%i,%i" % (i * 4, i * 4 + gt_size, i * 4 + gt_size + horizon))
             inp_te.append(
                 raw_data[raw_data.ped == p]
-                .iloc[i * step : i * step + gt_size + horizon, 2:5]
+                .iloc[i * step : i * step + gt_size + horizon, 2:11]
                 .values
             )
             ped_ids.append(p)
