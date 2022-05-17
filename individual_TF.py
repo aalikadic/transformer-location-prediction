@@ -19,7 +19,7 @@ import math
 
 class IndividualTF(nn.Module):
     def __init__(self, enc_inp_size, dec_inp_size, dec_out_size, N=6,
-                   d_model=512, d_ff=2048, h=8, dropout=0.1,mean=[0,0],std=[0,0]):
+                   d_model=1024, d_ff=4096, h=8, dropout=0.1,mean=[0,0],std=[0,0]):
         super(IndividualTF, self).__init__()
         "Helper: Construct a model from hyperparameters."
         c = copy.deepcopy

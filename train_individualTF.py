@@ -24,10 +24,10 @@ def main():
     parser.add_argument("--dataset_folder", type=str, default="datasets")
     parser.add_argument("--dataset_name", type=str, default="zara1")
     parser.add_argument("--obs", type=int, default=10)
-    parser.add_argument("--preds", type=int, default=1)
+    parser.add_argument("--preds", type=int, default=5)
     parser.add_argument("--emb_size", type=int, default=512)
     parser.add_argument("--heads", type=int, default=8)
-    parser.add_argument("--layers", type=int, default=6)
+    parser.add_argument("--layers", type=int, default=16)
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--cpu", action="store_true")
     parser.add_argument("--val_size", type=int, default=0)
@@ -154,8 +154,6 @@ def main():
         train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
 
-    batch = next(iter(tr_dl))
-
     val_dl = torch.utils.data.DataLoader(
         val_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
@@ -165,12 +163,13 @@ def main():
 
     # optim = SGD(list(a.parameters())+list(model.parameters())+list(generator.parameters()),lr=0.01)
     # sched=torch.optim.lr_scheduler.StepLR(optim,0.0005)
-    optim = NoamOpt(
-        args.emb_size,
-        args.factor,
-        len(tr_dl) * args.warmup,
-        torch.optim.Adam(model.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9),
-    )
+    #optim = NoamOpt(
+        #args.emb_size,
+        #args.factor,
+        #len(tr_dl) * args.warmup,
+        #torch.optim.Adam(model.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9),
+    #)
+    optim = Adam(model.parameters(), lr=0.001, weight_decay=0.5, betas=(0.9, 0.98), eps=1e-9)
     # optim=Adagrad(list(a.parameters())+list(model.parameters())+list(generator.parameters()),lr=0.01,lr_decay=0.001)
     epoch = 0
     # mean=train_dataset[:]['src'][:,1:,2:4].mean((0,1))
@@ -232,7 +231,8 @@ def main():
 
         for id_b, batch in enumerate(tr_dl):
 
-            optim.optimizer.zero_grad()
+            optim.zero_grad()
+            # optim.optimizer.zero_grad()
             inp = (batch["src"][:, 1:, 2:5].to(device) - mean.to(device)) / std.to(
                 device
             )
@@ -272,8 +272,8 @@ def main():
             )
             pred = model(inp, dec_inp, src_att, trg_att)
 
-            loss = (
-                F.pairwise_distance(
+            loss_x_y = (
+                F.mse_loss(
                     pred[:, :, 0:2].contiguous().view(-1, 2),
                     (
                         (batch["trg"][:, :, 2:4].to(device) - mean[:2].to(device))
@@ -285,7 +285,23 @@ def main():
                 ).mean()
                 + torch.mean(torch.abs(pred[:, :, :2]))
             )
-
+            loss_scale = (F.mse_loss(
+                pred[:, :, 2].contiguous().view(-1, 1),
+                    (
+                        (batch["trg"][:, :, 4].to(device) - mean[2].to(device))
+                        / std[2].to(device)
+                    )
+                    .contiguous()
+                    .view(-1, 1)
+                    .to(device),
+                ).mean()
+                + torch.mean(torch.abs(pred[:, :, 2]))
+            )
+            print("loss x y")
+            print(loss_x_y)
+            print("loss scale")
+            print(loss_scale)
+            loss = loss_x_y + loss_scale
             loss.backward()
             optim.step()
             print(
@@ -347,8 +363,8 @@ def main():
                     out = model(inp, dec_inp, src_att, trg_att)
 
                     dec_inp = torch.cat((start_of_seq, out), 1)
-                val_loss = (
-                    F.pairwise_distance(
+                val_loss_x_y = (
+                    F.mse_loss(
                         out[:, :, 0:2].contiguous().view(-1, 2),
                         (
                             (batch["trg"][:, :, 2:4].to(device) - mean[:2].to(device))
@@ -358,10 +374,22 @@ def main():
                         .view(-1, 2)
                         .to(device),
                     ).mean()
-                    + torch.mean(torch.abs(pred[:, :, :]))
+                    + torch.mean(torch.abs(pred[:, :, :2]))
+                )
+                val_loss_scale = (F.mse_loss(
+                    out[:, :, 2].contiguous().view(-1, 1),
+                        (
+                            (batch["trg"][:, :, 4].to(device) - mean[2].to(device))
+                            / std[2].to(device)
+                        )
+                        .contiguous()
+                        .view(-1, 1)
+                        .to(device),
+                    ).mean()
+                    + torch.mean(torch.abs(pred[:, :, 2]))
                 )
 
-                epoch_val_loss += val_loss.item()
+                epoch_val_loss += (val_loss_x_y.item() + val_loss_scale.item())
 
                 preds_tr_b = (
                     dec_inp[:, 1:, 0:2] * std[:2].to(device) + mean[:2].to(device)
@@ -370,7 +398,7 @@ def main():
 
                 print(
                     "val epoch %03i/%03i  batch %04i / %04i val loss: %7.4f"
-                    % (epoch, args.max_epoch, id_b, len(val_dl), val_loss.item())
+                    % (epoch, args.max_epoch, id_b, len(val_dl), val_loss)
                 )
             log.add_scalar("Loss/val", epoch_val_loss / len(val_dl), epoch)
             peds = np.concatenate(peds, 0)
