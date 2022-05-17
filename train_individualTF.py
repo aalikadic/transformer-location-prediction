@@ -28,7 +28,7 @@ def main():
     parser.add_argument("--emb_size", type=int, default=512)
     parser.add_argument("--heads", type=int, default=8)
     parser.add_argument("--layers", type=int, default=6)
-    parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument("--cpu", action="store_true")
     parser.add_argument("--val_size", type=int, default=0)
     parser.add_argument("--verbose", action="store_true")
@@ -398,7 +398,8 @@ def main():
                 dt_names = test_dataset.data["dataset_name"]
                 pr = np.concatenate(pr, 0)
                 mad, fad, errs = baselineUtils.distance_metrics(gt, pr)
-
+                mad = mad
+                fad = fad
                 log.add_scalar("eval/DET_mad", mad, epoch)
                 log.add_scalar("eval/DET_fad", fad, epoch)
 
